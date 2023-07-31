@@ -1,0 +1,13 @@
+.DS_Store
+node_modules
+dist
+
+# directus files
+*.db
+extensions/
+uploads/
+.env
+
+# Code editor files
+.vscode
+
