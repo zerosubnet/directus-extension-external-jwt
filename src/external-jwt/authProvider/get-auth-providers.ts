@@ -9,6 +9,7 @@ import { createError } from '@directus/errors';
 const InvalidJWKIssuerMetadata = createError('INVALID_JWKS_ISSUER_ERROR', 'No JWKS_URL or JWKS_KEYS and could not discover JWKS_URL from openid metadata', 500);
 const InvalidJWKSUrl = createError('INVALID_JWKS_ISSUER_ERROR', 'Could not retrieve any valid keys from JWKS_URL', 500);
 
+
 export interface AuthProvider {
 	label: string;
 	name: string;
@@ -32,7 +33,7 @@ export interface AuthProvider {
 
 export async function getAuthProviders(): Promise<AuthProvider[]> {
 	console.log("calling auth providers")
-	return new Promise(async (resolve, reject) => {
+	return new Promise((resolve, reject) => {
 		const authProviders: AuthProvider[] = toArray(env['AUTH_PROVIDERS'])
 			.filter((provider) => provider && env[`AUTH_${provider.toUpperCase()}_DRIVER`] === ('openid' || 'oauth2'))
 			.map((provider) => ({
@@ -57,7 +58,7 @@ export async function getAuthProviders(): Promise<AuthProvider[]> {
 
 		
 
-		var promises = [];
+		const promises = [];
 
 		for (const authProvider of authProviders) {
 			switch (authProvider.driver) {	
@@ -84,65 +85,56 @@ export async function getAuthProviders(): Promise<AuthProvider[]> {
 	});
 }
 
-function getJWKS(provider: AuthProvider): Promise<AuthProvider>{
-	return new Promise(async (resolve, reject) => {
-		if(provider.jwks_keys != null && provider.issuer_url == null && provider.jwks_url == null) {
-			
-			const jwksClient = new JwksClient({
-				getKeysInterceptor: () => {
-					return JSON.parse(provider.jwks_keys);
-				},
-				jwksUri: ''
-			})
-		
-
-			provider.JWKSClient = jwksClient;
-
-			resolve(provider);
-			return;
-		}
-
-		if(provider.issuer_url && !provider.jwks_url) {
-			//try to discover with openid
-			try {
-				const issuer = await Issuer.discover(provider.issuer_url);
-				if(issuer.metadata.jwks_uri != null) {
-					provider.jwks_url = issuer.metadata.jwks_uri;
-				}
-			} catch (error) {
-				//throw new InvalidJWKIssuerMetadata();
-				reject("Could not discover JWKS_URL from openid metadata")
-			}
-		}
-
-		if(!provider.jwks_url) {
-			reject("No JWKS_URL or JWKS_KEYS and could not discover JWKS_URL from openid metadata")
-			return;
-		}
-
+async function getJWKS(provider: AuthProvider) {
+	if(provider.jwks_keys !== undefined && provider.issuer_url == null && provider.jwks_url == null) {
+		const jwks_keys = JSON.parse(provider.jwks_keys);	
 		const jwksClient = new JwksClient({
-			jwksUri: provider.jwks_url,
-			cache: true,
-			cacheMaxAge: 36000000, // 10 hours
-			cacheMaxEntries: 10,
-			timeout: 30000, // 30 seconds
-		});
-
-		// try to get the keys
-		try {
-			const keys = await jwksClient.getSigningKeys()
-			if (keys.length == 0) {
-				reject("Could not retrieve any valid keys from JWKS_URL")
-			}
-		} catch (error) {
-			throw new InvalidJWKSUrl();
-		}
+			getKeysInterceptor: () => {
+				return jwks_keys;
+			},
+			jwksUri: ''
+		})
+	
 
 		provider.JWKSClient = jwksClient;
 		
-		resolve(provider);
+	}
 
-	})
+	if(provider.issuer_url && !provider.jwks_url) {
+		//try to discover with openid
+		const issuer = await Issuer.discover(provider.issuer_url);
+		if(issuer.metadata.jwks_uri != null) {
+			provider.jwks_url = issuer.metadata.jwks_uri;
+		}	
+	}
 
+	if (provider.jwks_url == null) throw new InvalidJWKIssuerMetadata();
+
+	const jwksClient = await getJWKSClient(provider.jwks_url);
+
+	provider.JWKSClient = jwksClient;
 	
+	return provider;
+}
+
+async function getJWKSClient(url: string) {
+	const jwksClient = new JwksClient({
+		jwksUri: url,
+		cache: true,
+		cacheMaxAge: 36000000, // 10 hours
+		cacheMaxEntries: 10,
+		timeout: 30000, // 30 seconds
+	});
+
+	// try to get the keys
+	try {
+		const keys = await jwksClient.getSigningKeys()
+		if (keys.length == 0) {
+			throw new InvalidJWKSUrl();
+		}
+	} catch (error) {
+		throw new InvalidJWKSUrl();
+	}
+
+	return jwksClient;
 }

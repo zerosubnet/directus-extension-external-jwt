@@ -1,4 +1,3 @@
-import type { JwksClient } from "jwks-rsa";
 import type { AuthProvider } from "./authProvider/get-auth-providers.js";
 import jwt from 'jsonwebtoken';
 

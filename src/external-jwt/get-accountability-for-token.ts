@@ -1,20 +1,17 @@
 import type { Accountability } from '@directus/types';
-import type { JwtHeader, VerifyCallback} from 'jsonwebtoken';
-import {JsonWebTokenError} from 'jsonwebtoken';
 import { getAuthProviders } from './authProvider/get-auth-providers.js';
-import jwt from 'jsonwebtoken';
 import type { Knex } from 'knex';
-import { createError } from '@directus/errors';
 import { verify_token } from './verify-token.js';
-import { forEach } from 'lodash-es';
+
 
 
 const authProviders = await getAuthProviders();
 
+/*
 const MissingJWTHeaderError = createError('INVALID_JWKS_ISSUER_ERROR', 'No header in JWT Token', 500);
 const NoValidKeysError = createError('INVALID_JWKS_ISSUER_ERROR', 'could not retrieve any valid keys with key id(kid)', 500);
 const NoAuthProvidersError = createError('INVALID_JWKS_ISSUER_ERROR', 'No auth providers in the list', 500);
-
+*/
 
 // TODO: optimize this function, reduce the amount of loops
 
@@ -38,7 +35,7 @@ export async function getAccountabilityForToken(
 		return accountability
 	}
 
-	return new Promise(async (resolve, reject) => {
+	return new Promise((resolve, reject) => {
 		const providers = authProviders.filter((provider) => provider && iss.includes(provider.client_id));
 		if(providers.length === 0) return accountability;
 		if(providers.length > 1) {
@@ -48,7 +45,7 @@ export async function getAccountabilityForToken(
 
 		const provider = providers[0];
 
-		let promises = [];
+		
 
 		verify_token(provider, token).then(async (result) => {
 			if(accountability) {

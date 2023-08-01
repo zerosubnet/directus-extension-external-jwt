@@ -10,6 +10,28 @@ import { requireYAML } from '../require-yaml.js';
 const allowedEnvironmentVars = [
 	// general
 	'CONFIG_PATH',
+	// cache
+	'CACHE_ENABLED',
+	'CACHE_TTL',
+	'CACHE_CONTROL_S_MAXAGE',
+	'CACHE_AUTO_PURGE',
+	'CACHE_AUTO_PURGE_IGNORE_LIST',
+	'CACHE_SYSTEM_TTL',
+	'CACHE_SCHEMA',
+	'CACHE_PERMISSIONS',
+	'CACHE_NAMESPACE',
+	'CACHE_STORE',
+	'CACHE_STATUS_HEADER',
+	'CACHE_VALUE_MAX_SIZE',
+	'CACHE_SKIP_ALLOWED',
+	'CACHE_HEALTHCHECK_THRESHOLD',
+	// redis
+	'REDIS',
+	'REDIS_HOST',
+	'REDIS_PORT',
+	'REDIS_USERNAME',
+	'REDIS_PASSWORD',
+	'REDIS_JWT_DB',
 	// auth
 	'AUTH_PROVIDERS',
 	'AUTH_.+_DRIVER',
@@ -29,19 +51,7 @@ const allowedEnvironmentVars = [
 	'AUTH_.+_LABEL',
 	'AUTH_.+_PARAMS',
 	'AUTH_.+_ISSUER_URL',
-	'AUTH_.+_AUTH_REQUIRE_VERIFIED_EMAIL',
 	'AUTH_.+_CLIENT_URL',
-	'AUTH_.+_BIND_DN',
-	'AUTH_.+_BIND_PASSWORD',
-	'AUTH_.+_USER_DN',
-	'AUTH_.+_USER_ATTRIBUTE',
-	'AUTH_.+_USER_SCOPE',
-	'AUTH_.+_MAIL_ATTRIBUTE',
-	'AUTH_.+_FIRST_NAME_ATTRIBUTE',
-	'AUTH_.+_LAST_NAME_ATTRIBUTE',
-	'AUTH_.+_GROUP_DN',
-	'AUTH_.+_GROUP_ATTRIBUTE',
-	'AUTH_.+_GROUP_SCOPE',
     'AUTH_.+_TRUSTED',
     'AUTH_.+_JWKS_URL',
     'AUTH_.+_JWKS_KEYS',
@@ -49,8 +59,6 @@ const allowedEnvironmentVars = [
 	'AUTH_.+_JWT_ADMIN_KEY',
 	'AUTH_.+_JWT_APP_KEY',
 	'AUTH_.+_JWT_USEDB',
-	'AUTH_.+_IDP.+',
-	'AUTH_.+_SP.+',
 ].map((name) => new RegExp(`^${name}$`));
 
 const acceptedEnvTypes = ['string', 'number', 'regex', 'array', 'json'];
@@ -97,7 +105,7 @@ export function refreshEnv(): void {
 
 
 
-function toBoolean(value: any): boolean {
+function toBoolean(value: string | boolean | number): boolean {
 	return value === 'true' || value === true || value === '1' || value === 1;
 }
 
@@ -110,6 +118,7 @@ function processConfiguration() {
 	const fileExt = path.extname(configPath).toLowerCase();
 
 	if (fileExt === '.js') {
+		// eslint-disable-next-line @typescript-eslint/no-var-requires
 		const module = require(configPath);
 		const exported = module.default || module;
 
@@ -161,8 +170,8 @@ function getEnvironmentValueWithPrefix(envArray: Array<string>): Array<string | 
 }
 
 function getEnvironmentValueByType(envVariableString: string) {
-	const variableType = getVariableType(envVariableString)!;
-	const envVariableValue = getEnvVariableValue(envVariableString, variableType)!;
+	const variableType = getVariableType(envVariableString) ?? false;
+	const envVariableValue = getEnvVariableValue(envVariableString, variableType) ?? false;
 
 	switch (variableType) {
 		case 'number':
@@ -285,7 +294,7 @@ function processValues(env: Record<string, any>) {
 	return env;
 }
 
-function tryJSON(value: any) {
+function tryJSON(value: string) {
 	try {
 		return parseJSON(value);
 	} catch {
