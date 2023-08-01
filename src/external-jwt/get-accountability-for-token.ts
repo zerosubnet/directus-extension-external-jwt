@@ -1,35 +1,29 @@
 import type { Accountability } from '@directus/types';
 import type { JwtHeader, VerifyCallback} from 'jsonwebtoken';
 import {JsonWebTokenError} from 'jsonwebtoken';
-import { getAuthProviders } from './get-auth-providers';
+import { getAuthProviders } from './authProvider/get-auth-providers.js';
 import jwt from 'jsonwebtoken';
+import type { Knex } from 'knex';
+import { createError } from '@directus/errors';
+import { verify_token } from './verify-token.js';
+import { forEach } from 'lodash-es';
 
 
-const authProviders = getAuthProviders();
+const authProviders = await getAuthProviders();
+
+const MissingJWTHeaderError = createError('INVALID_JWKS_ISSUER_ERROR', 'No header in JWT Token', 500);
+const NoValidKeysError = createError('INVALID_JWKS_ISSUER_ERROR', 'could not retrieve any valid keys with key id(kid)', 500);
+const NoAuthProvidersError = createError('INVALID_JWKS_ISSUER_ERROR', 'No auth providers in the list', 500);
 
 
 // TODO: optimize this function, reduce the amount of loops
-async function getKey(header: JwtHeader | undefined, callback: VerifyCallback<string>) {
-	for (const authProvider of (await authProviders)) {
-		if(!header) return new JsonWebTokenError("No header found")
-		authProvider.getSigningKey(header.kid, function (err, key) {
-			if (err) {
-				return new JsonWebTokenError("Could not retrieve any valid keys with key id(kid)");
-			}
-			if(key == null) return new JsonWebTokenError("No valid key found");
-			
-			
-			const signingKey = key.getPublicKey();
-			return callback(null, signingKey);
-		});
-	}
 
-    return new JsonWebTokenError("No auth provider in list");
-}
 
 export async function getAccountabilityForToken(
-	token?: string | null,
-	accountability?: Accountability
+	token: string | null,
+	iss: string[] | string | undefined,
+	accountability: Accountability | null,
+	database: Knex
 ): Promise<Accountability> {
     if (!accountability) {
 		accountability = {
@@ -40,32 +34,81 @@ export async function getAccountabilityForToken(
 		};
 	}
 
-    if (token) {
-        const decodedToken = jwt.decode(token);
-        if(typeof decodedToken === 'string') return accountability; // if token is not a jwt, let directus handle it
-        if(decodedToken?.iss == 'directus') return accountability; // if token issued by directus, let directus handle it
-        
+	if (token == null || iss == null) {
+		return accountability
+	}
 
-        jwt.verify(token, getKey,{
-        }, function(err, decoded) {
-			if (err) {
-				console.log(err)
-				return accountability;
+	return new Promise(async (resolve, reject) => {
+		const providers = authProviders.filter((provider) => provider && iss.includes(provider.client_id));
+		if(providers.length === 0) return accountability;
+		if(providers.length > 1) {
+			console.log("to many matching providers");
+			return accountability;
+		}
+
+		const provider = providers[0];
+
+		let promises = [];
+
+		verify_token(provider, token).then(async (result) => {
+			if(accountability) {
+				// check if role key is set else try role key
+
+				if(provider.role_key != null) {
+					accountability.role = typeof result[provider.role_key] === 'string' ? result[provider.role_key] : result[provider.role_key][0];
+				} else {
+					if (result.role) {
+						accountability.role = result.role;
+					}
+				}
+
+				if(provider.use_database) { // use database to get user
+					// TODO: Add caching to this function
+
+					const user = await database
+						.select('directus_users.id', 'directus_users.role', 'directus_roles.admin_access', 'directus_roles.app_access')
+						.from('directus_users')
+						.leftJoin('directus_roles', 'directus_users.role', 'directus_roles.id')
+						.where({
+							'directus_users.external_identifier': result.sub,
+							'directus_users.provider': provider.name,
+						})
+						.first();
+					
+					if(!user) {
+						reject("invalid user credentials");
+					}
+
+					accountability.user = user.id;
+					accountability.role = user.role;
+					accountability.admin = user.admin_access === true || user.admin_access == 1;
+					accountability.app = user.app_access === true || user.app_access == 1;
+				} else {
+					if(provider.admin_key != null) {
+						accountability.admin = result[provider.admin_key];
+					}
+					if(provider.app_key != null) {
+						accountability.app = result[provider.app_key];
+					}
+					accountability.user = result.sub;
+					
+					
+				}
+				
+				console.log(accountability);
+				
+				resolve(accountability);
 			}
 
-			console.log(decoded)
-            
-            // We have a valid token, validate user against database.
-            // We must also check against the correct provider.
+			reject("no accountability");
 
-            // TODO: add cache support
-            // TODO: add database check
+			
 
+		})
 
+        
+    
 
-			return accountability;
-		});
-    }
+	});
 
-    return accountability;
 }

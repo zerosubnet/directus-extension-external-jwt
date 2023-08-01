@@ -3,7 +3,7 @@ import dotenv from 'dotenv';
 import fs from 'fs';
 import { clone, toNumber, toString } from 'lodash-es';
 import path from 'path';
-import { requireYAML } from './require-yaml';
+import { requireYAML } from '../require-yaml.js';
 
 
 // keeping this here for now to prevent a circular import to constants.ts
@@ -45,6 +45,10 @@ const allowedEnvironmentVars = [
     'AUTH_.+_TRUSTED',
     'AUTH_.+_JWKS_URL',
     'AUTH_.+_JWKS_KEYS',
+	'AUTH_.+_JWT_ROLE_KEY',
+	'AUTH_.+_JWT_ADMIN_KEY',
+	'AUTH_.+_JWT_APP_KEY',
+	'AUTH_.+_JWT_USEDB',
 	'AUTH_.+_IDP.+',
 	'AUTH_.+_SP.+',
 ].map((name) => new RegExp(`^${name}$`));

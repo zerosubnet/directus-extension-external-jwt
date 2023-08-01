@@ -3,29 +3,38 @@ import {JwksClient} from 'jwks-rsa';
 
 import { Issuer } from 'openid-client';
 
-import env from './config';
+import env from '../config/config.js';
 import { createError } from '@directus/errors';
 
 const InvalidJWKIssuerMetadata = createError('INVALID_JWKS_ISSUER_ERROR', 'No JWKS_URL or JWKS_KEYS and could not discover JWKS_URL from openid metadata', 500);
 const InvalidJWKSUrl = createError('INVALID_JWKS_ISSUER_ERROR', 'Could not retrieve any valid keys from JWKS_URL', 500);
 
-interface AuthProvider {
+export interface AuthProvider {
 	label: string;
 	name: string;
 	driver: string;
 	icon?: string;
+	client_id: string;
+	client_secret?: string;
 	trusted: boolean;
 	jwks_url?: string;
 	jwks_keys?: string;
 	issuer_url?: string;
+	
+	admin_key?: string;
+	app_key?: string;
+	role_key?: string;
+	JWKSClient?: JwksClient;
+	use_database?: boolean;
 }
 
 
 
-export async function getAuthProviders(): Promise<JwksClient[]> {
+export async function getAuthProviders(): Promise<AuthProvider[]> {
+	console.log("calling auth providers")
 	return new Promise(async (resolve, reject) => {
-		const authProviders = toArray(env['AUTH_PROVIDERS'])
-			.filter((provider) => provider && env[`AUTH_${provider.toUpperCase()}_DRIVER`])
+		const authProviders: AuthProvider[] = toArray(env['AUTH_PROVIDERS'])
+			.filter((provider) => provider && env[`AUTH_${provider.toUpperCase()}_DRIVER`] === ('openid' || 'oauth2'))
 			.map((provider) => ({
 				name: provider,
 				label: env[`AUTH_${provider.toUpperCase()}_LABEL`],
@@ -35,6 +44,12 @@ export async function getAuthProviders(): Promise<JwksClient[]> {
 				jwks_url: env[`AUTH_${provider.toUpperCase()}_JWKS_URL`],
 				jwks_keys: env[`AUTH_${provider.toUpperCase()}_JWKS_KEYS`],
 				issuer_url: env[`AUTH_${provider.toUpperCase()}_ISSUER_URL`],
+				admin_key: env[`AUTH_${provider.toUpperCase()}_JWT_ADMIN_KEY`],
+				app_key: env[`AUTH_${provider.toUpperCase()}_JWT_APP_KEY`],
+				role_key: env[`AUTH_${provider.toUpperCase()}_JWT_ROLE_KEY`],
+				client_id: env[`AUTH_${provider.toUpperCase()}_CLIENT_ID`],
+				client_secret: env[`AUTH_${provider.toUpperCase()}_CLIENT_SECRET`],
+				use_database: env[`AUTH_${provider.toUpperCase()}_JWT_USEDB`],
 			}));
 
 		
@@ -47,12 +62,15 @@ export async function getAuthProviders(): Promise<JwksClient[]> {
 		for (const authProvider of authProviders) {
 			switch (authProvider.driver) {	
 				case 'openid':
-					if (!authProvider.trusted || (!authProvider.issuer_url && !authProvider.jwks_url && !authProvider.jwks_keys)) break;
-					promises.push(getJWKS(authProvider.issuer_url, authProvider.jwks_url, authProvider.jwks_keys));
+					
+					if (!authProvider.trusted || (authProvider.issuer_url == null && authProvider.jwks_url == null && authProvider.jwks_keys == null)) break;
+					//promises.push(getJWKS(authProvider.issuer_url, authProvider.jwks_url, authProvider.jwks_keys));
+					promises.push(getJWKS(authProvider));
 					break;
 				case 'oauth2':
-					if (!authProvider.trusted || (!authProvider.issuer_url && !authProvider.jwks_url && !authProvider.jwks_keys)) break;
-					promises.push(getJWKS(authProvider.issuer_url, authProvider.jwks_url, authProvider.jwks_keys));
+					if (!authProvider.trusted || (authProvider.issuer_url == null && authProvider.jwks_url == null && authProvider.jwks_keys == null)) break;
+					//promises.push(getJWKS(authProvider.issuer_url, authProvider.jwks_url, authProvider.jwks_keys));
+					promises.push(getJWKS(authProvider));
 					break;
 			}
 		}
@@ -66,26 +84,30 @@ export async function getAuthProviders(): Promise<JwksClient[]> {
 	});
 }
 
-function getJWKS(issuer_url: string, jwks_url: string, jwks_keys: string): Promise<JwksClient>{
+function getJWKS(provider: AuthProvider): Promise<AuthProvider>{
 	return new Promise(async (resolve, reject) => {
-		if(jwks_keys && !issuer_url && !jwks_url) {
+		if(provider.jwks_keys != null && provider.issuer_url == null && provider.jwks_url == null) {
+			
 			const jwksClient = new JwksClient({
 				getKeysInterceptor: () => {
-					return JSON.parse(jwks_keys);
+					return JSON.parse(provider.jwks_keys);
 				},
 				jwksUri: ''
 			})
+		
 
-			resolve(jwksClient);
+			provider.JWKSClient = jwksClient;
+
+			resolve(provider);
 			return;
 		}
 
-		if(issuer_url && !jwks_url) {
+		if(provider.issuer_url && !provider.jwks_url) {
 			//try to discover with openid
 			try {
-				const issuer = await Issuer.discover(issuer_url);
+				const issuer = await Issuer.discover(provider.issuer_url);
 				if(issuer.metadata.jwks_uri != null) {
-					jwks_url = issuer.metadata.jwks_uri;
+					provider.jwks_url = issuer.metadata.jwks_uri;
 				}
 			} catch (error) {
 				//throw new InvalidJWKIssuerMetadata();
@@ -93,8 +115,13 @@ function getJWKS(issuer_url: string, jwks_url: string, jwks_keys: string): Promi
 			}
 		}
 
+		if(!provider.jwks_url) {
+			reject("No JWKS_URL or JWKS_KEYS and could not discover JWKS_URL from openid metadata")
+			return;
+		}
+
 		const jwksClient = new JwksClient({
-			jwksUri: jwks_url,
+			jwksUri: provider.jwks_url,
 			cache: true,
 			cacheMaxAge: 36000000, // 10 hours
 			cacheMaxEntries: 10,
@@ -110,8 +137,10 @@ function getJWKS(issuer_url: string, jwks_url: string, jwks_keys: string): Promi
 		} catch (error) {
 			throw new InvalidJWKSUrl();
 		}
+
+		provider.JWKSClient = jwksClient;
 		
-		resolve(jwksClient);
+		resolve(provider);
 
 	})
 
