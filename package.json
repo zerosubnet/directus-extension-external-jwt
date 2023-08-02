@@ -35,7 +35,8 @@
 			[
 				"@semantic-release/exec",
 				{
-					"tagImage": "docker tag ${SRCIMAGE} ${DSTIMAGE}:${nextRelease.version} && docker push ${DSTIMAGE}:${nextRelease.version}"
+					"tagImage": "docker tag ${SRCIMAGE} ${DSTIMAGE}:${nextRelease.version}",
+					"publishImage": "docker push ${DSTIMAGE}:${nextRelease.version}"
 				}
 			]
 		],
