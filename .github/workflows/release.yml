@@ -26,12 +26,13 @@ jobs:
         uses: actions/setup-node@v3
         with:
            node-version: 18
+           cache: 'pnpm'
       - name: Install dependencies
-        run: npm clean-install
+        run: pnpm install
       - name: Verify the integrity of provenance attestations and registry signatures for installed dependencies
-        run: npm audit signatures
+        run: pnpm audit signatures
       - name: Release
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
+          #NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
         run: npx semantic-release

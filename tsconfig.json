@@ -1,16 +1,20 @@
 {
 	"compilerOptions": {
 		"esModuleInterop": true,
-		"lib": ["es2020"],
-		"module": "es2022",
+		"lib": ["ES2022"],
+		"module": "ES2022",
 		"preserveConstEnums": true,
 		"moduleResolution": "node",
 		"strict": true,
 		"sourceMap": true,
+		"declaration": true,
+		"noUnusedLocals": true,
 		"target": "es2022",
 		"types": ["node"],
-		"outDir": "dist"
+		"outDir": "dist",
+		"typeRoots": ["node_modules/@types"],
+		"allowSyntheticDefaultImports": true,
 	  },
-	  "include": ["src/**/*"],
-	  "exclude": ["node_modules"]
+	  "include": ["src/**/*.ts"],
+	  "exclude": []
 }

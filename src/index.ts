@@ -2,8 +2,11 @@ import { defineHook } from '@directus/extensions-sdk';
 import { getAccountabilityForToken } from './external-jwt/get-accountability-for-token';
 import type { Request } from 'express';
 import jwt from 'jsonwebtoken';
+import { HookConfig } from '@directus/types';
 
-export default defineHook(({ filter }) => {
+
+
+export default defineHook<HookConfig>(({ filter }) => {
 	
 	// get all configuration
 	

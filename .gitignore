@@ -12,3 +12,5 @@ uploads/
 # Code editor files
 .vscode
 
+# Coverage
+coverage/
