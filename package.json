@@ -18,7 +18,29 @@
 				"name": "beta",
 				"prerelease": true
 			}
-		]
+		],
+		"plugins": [
+			"@semantic-release/commit-analyzer",
+			"@semantic-release/release-notes-generator",
+			"@semantic-release/changelog",
+			"@semantic-release/npm",
+			[
+				"@semantic-release/github",
+				{
+					"assets": [
+						"dist/**"
+					]
+				}
+			],
+			[
+				"@semantic-release/exec",
+				{
+					"tagImage": "docker tag ${SRCIMAGE} ${DSTIMAGE}:${nextRelease.version}",
+					"publishImage": "docker push ${DSTIMAGE}:${nextRelease.version}"
+				}
+			]
+		],
+		"preset": "angular"
 	},
 	"publishConfig": {
 		"access": "public"
@@ -69,6 +91,11 @@
 		"@directus/types": "^10.1.3",
 		"@directus/utils": "^10.0.8",
 		"@istanbuljs/nyc-config-typescript": "^1.0.2",
+		"@semantic-release/changelog": "^6.0.3",
+		"@semantic-release/commit-analyzer": "^10.0.1",
+		"@semantic-release/exec": "^6.0.3",
+		"@semantic-release/github": "^9.0.4",
+		"@semantic-release/npm": "^10.0.4",
 		"@types/chai": "^4.3.5",
 		"@types/chai-as-promised": "^7.1.5",
 		"@types/config": "^3.3.0",
@@ -96,6 +123,7 @@
 		"knex": "^2.5.1",
 		"lodash-es": "^4.17.21",
 		"nyc": "^15.1.0",
+		"semantic-release": "^21.0.7",
 		"sqlite3": "^5.1.6",
 		"ts-mocha": "^10.0.0",
 		"ts-node": "^10.9.1",
