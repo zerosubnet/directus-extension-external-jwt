@@ -31,6 +31,12 @@
 						"dist/**"
 					]
 				}
+			],
+			[
+				"@semantic-release/exec",
+				{
+					"tagImage": "docker tag ${SRCIMAGE} ${DSTIMAGE}:${nextRelease.version}"
+				}
 			]
 		],
 		"preset": "angular"
@@ -86,6 +92,7 @@
 		"@istanbuljs/nyc-config-typescript": "^1.0.2",
 		"@semantic-release/changelog": "^6.0.3",
 		"@semantic-release/commit-analyzer": "^10.0.1",
+		"@semantic-release/exec": "^6.0.3",
 		"@semantic-release/github": "^9.0.4",
 		"@semantic-release/npm": "^10.0.4",
 		"@types/chai": "^4.3.5",
