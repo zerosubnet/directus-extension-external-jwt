@@ -29,7 +29,7 @@ jobs:
         name: install dependencies
       - run: pnpm lint
         name: linting
-      - run: pnpm test
+      - run: pnpm test:coverage
         name: testing
       - run: pnpm build
         name: build package
