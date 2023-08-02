@@ -3,14 +3,16 @@ name: Create and publish a Docker image
 
 on:
   push:
-    tags: [ "*" ]
+    tags:
+    - "v*"
 
 env:
   REGISTRY: ghcr.io
   IMAGE_NAME: ${{ github.repository }}
 
 jobs:
-  build-and-push-image:
+  tag-image:
+    name: Tag release image version
     runs-on: ubuntu-latest
 
     permissions:
