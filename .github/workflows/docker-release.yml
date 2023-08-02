@@ -2,10 +2,8 @@ name: Create and publish a Docker image
 
 
 on:
-  release:
-    types:
-    - published
-    - prereleased
+  push:
+    tags: [ "*" ]
 
 env:
   REGISTRY: ghcr.io
@@ -42,7 +40,5 @@ jobs:
         echo "::set-output name=short_sha::$calculatedSha"
 
     - name: Push image
-      uses: akhilerm/tag-push-action@v2.1.0
-      with:
-        src: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ steps.vars.outputs.short_sha }}
-        dst: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ steps.meta.outputs.tags }}
+      run: |
+        docker image tag ${{ steps.meta.outputs.tags }} ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ steps.vars.outputs.short_sha }}
