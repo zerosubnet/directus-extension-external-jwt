@@ -25,13 +25,14 @@ const allowedEnvironmentVars = [
 	'CACHE_VALUE_MAX_SIZE',
 	'CACHE_SKIP_ALLOWED',
 	'CACHE_HEALTHCHECK_THRESHOLD',
+	// Externl JWT Cache
+	'CACHE_JWT_NAMESPACE',
 	// redis
 	'REDIS',
 	'REDIS_HOST',
 	'REDIS_PORT',
 	'REDIS_USERNAME',
 	'REDIS_PASSWORD',
-	'REDIS_JWT_DB',
 	// auth
 	'AUTH_PROVIDERS',
 	'AUTH_.+_DRIVER',

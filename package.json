@@ -103,8 +103,10 @@
 		"vitest": "^0.34.1"
 	},
 	"dependencies": {
+		"@keyv/redis": "^2.7.0",
 		"jsonwebtoken": "^9.0.1",
 		"jwks-rsa": "^3.0.1",
+		"keyv": "^4.5.3",
 		"openid-client": "^5.4.3"
 	}
 }

@@ -2,6 +2,7 @@ import type { Accountability } from '@directus/types';
 import { getAuthProviders } from './authProvider/get-auth-providers.js';
 import type { Knex } from 'knex';
 import { verify_token } from './verify-token.js';
+import { CacheEnabled, CacheGet, CacheSet } from './cache.js';
 
 
 
@@ -22,7 +23,7 @@ export async function getAccountabilityForToken(
 	accountability: Accountability | null,
 	database: Knex
 ): Promise<Accountability> {
-    if (!accountability) {
+    if (accountability == null) {
 		accountability = {
 			user: null,
 			role: null,
@@ -32,80 +33,92 @@ export async function getAccountabilityForToken(
 	}
 
 	if (token == null || iss == null) {
+		
 		return accountability
 	}
+	
+	const providers = authProviders.filter((provider) => provider.issuer_url && iss.includes(provider.issuer_url));
+	
+	if(providers.length === 0) return accountability;
+	if(providers.length > 1) {
+		return accountability;
+	}
+	
 
-	return new Promise((resolve, reject) => {
-		const providers = authProviders.filter((provider) => provider && iss.includes(provider.client_id));
-		if(providers.length === 0) return accountability;
-		if(providers.length > 1) {
-			console.log("to many matching providers");
-			return accountability;
-		}
+	const provider = providers[0];
 
-		const provider = providers[0];
+	
+
+	try {
 
 		
+		const result = await verify_token(provider, token)
 
-		verify_token(provider, token).then(async (result) => {
-			if(accountability) {
-				// check if role key is set else try role key
-
-				if(provider.role_key != null) {
-					accountability.role = typeof result[provider.role_key] === 'string' ? result[provider.role_key] : result[provider.role_key][0];
-				} else {
-					if (result.role) {
-						accountability.role = result.role;
-					}
-				}
-
-				if(provider.use_database) { // use database to get user
-					// TODO: Add caching to this function
-
-					const user = await database
-						.select('directus_users.id', 'directus_users.role', 'directus_roles.admin_access', 'directus_roles.app_access')
-						.from('directus_users')
-						.leftJoin('directus_roles', 'directus_users.role', 'directus_roles.id')
-						.where({
-							'directus_users.external_identifier': result.sub,
-							'directus_users.provider': provider.name,
-						})
-						.first();
-					
-					if(!user) {
-						reject("invalid user credentials");
-					}
-
-					accountability.user = user.id;
-					accountability.role = user.role;
-					accountability.admin = user.admin_access === true || user.admin_access == 1;
-					accountability.app = user.app_access === true || user.app_access == 1;
-				} else {
-					if(provider.admin_key != null) {
-						accountability.admin = result[provider.admin_key];
-					}
-					if(provider.app_key != null) {
-						accountability.app = result[provider.app_key];
-					}
-					accountability.user = result.sub;
-					
-					
-				}
+		
+		
+		if(provider.use_database) { // use database to get user
+			// TODO: Add caching to this function
+			if (CacheEnabled() && result.sub) {
 				
-				console.log(accountability);
-				
-				resolve(accountability);
+				const cachedAccountability = await CacheGet(result.sub);
+				if (cachedAccountability) {
+					return cachedAccountability;
+				}
 			}
 
-			reject("no accountability");
+			const user = await database
+				.select('directus_users.id', 'directus_users.role', 'directus_roles.admin_access', 'directus_roles.app_access')
+				.from('directus_users')
+				.leftJoin('directus_roles', 'directus_users.role', 'directus_roles.id')
+				.where({
+					'directus_users.external_identifier': result.sub,
+					'directus_users.provider': provider.name,
+				})
+				.first();
+			
+			if(!user) {
+				return accountability;
+			}
 
+			accountability.user = user.id;
+			accountability.role = user.role;
+			accountability.admin = user.admin_access === true || user.admin_access == 1;
+			accountability.app = user.app_access === true || user.app_access == 1;
+
+			if (CacheEnabled() && result.sub) {
+				CacheSet(result.sub, accountability);
+			}
 			
 
-		})
+			return accountability;
+		} 
 
-        
-    
+		// check if role key is set else try role key
+		if(provider.role_key != null) {
+			if(typeof result[provider.role_key] === 'string') {
+				accountability.role = result[provider.role_key];
+			}
+			if(typeof result[provider.role_key] === 'object') {
+				accountability.role = ''
+			}
+			if(result[provider.role_key].instanceOf(Array)) {
+				accountability.role = result[provider.role_key][0];
+			}
+		}
 
-	});
+		if(provider.admin_key != null) {
+			accountability.admin = result[provider.admin_key];
+		}
+		if(provider.app_key != null) {
+			accountability.app = result[provider.app_key];
+		}
+		accountability.user = result.sub;
+	
+	} catch (error) {
+		return accountability;
+	}
+	
+	
+	return accountability;
 
 }

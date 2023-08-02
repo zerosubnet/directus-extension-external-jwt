@@ -3,7 +3,7 @@ import {JwksClient} from 'jwks-rsa';
 
 import { Issuer } from 'openid-client';
 
-import env from '../config/config.js';
+import env from '../config/config';
 import { createError } from '@directus/errors';
 
 const InvalidJWKIssuerMetadata = createError('INVALID_JWKS_ISSUER_ERROR', 'No JWKS_URL or JWKS_KEYS and could not discover JWKS_URL from openid metadata', 500);
