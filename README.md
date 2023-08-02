@@ -5,6 +5,12 @@ The plugin expects to resolve the following new configuration option
 
 The provider must issues Access tokens as JWT since this is used for verification right now. Might add support for general tokens later.
 
+If USEDB are enabled the extension will try to search for the user in the database by looking at the sub in the JWT token. The user must exists and all roles for that use will be used. 
+
+When using USEDB you should also enable the caching option to reduce the time spent against the api and reduce the number of db lookups. The cache stores the user object in the cache based on the sub in the token. 
+
+USEDB also validates that the issuer is the same as assigned to the user. 
+
 ## Configuration
 all configuration options listed here are an extension to directus default config.
 
