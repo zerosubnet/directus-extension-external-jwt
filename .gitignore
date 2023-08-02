@@ -10,7 +10,7 @@ uploads/
 .env
 
 # Redis files
-./*.rdb
+*.rdb
 
 # Code editor files
 .vscode
