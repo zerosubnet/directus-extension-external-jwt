@@ -2,7 +2,9 @@ name: Pull Request
 
 on:
   pull_request:
-    branches: [ main ]
+    branches:
+      - main
+      - next
 
 jobs:
   check:
@@ -27,8 +29,10 @@ jobs:
         name: install dependencies
       - run: pnpm lint
         name: linting
-      - run: pnpm test
+      - run: pnpm test:coverage
         name: testing
+      - run: pnpm build
+        name: build package
       - name: 'Report Coverage'
         if: always() # Also generate the report if tests are failing
         uses:  davelosert/vitest-coverage-report-action@v2

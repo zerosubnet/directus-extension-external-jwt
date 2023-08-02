@@ -9,6 +9,9 @@ extensions/
 uploads/
 .env
 
+# Redis files
+./*.rdb
+
 # Code editor files
 .vscode
 

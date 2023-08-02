@@ -34,6 +34,10 @@ jobs:
            cache: 'pnpm'
       - name: Install dependencies
         run: pnpm install
+      - run: pnpm lint
+        name: linting
+      - run: pnpm test
+        name: testing
       - name: Verify the integrity of provenance attestations and registry signatures for installed dependencies
         run: pnpm audit signatures
       - name: Release
