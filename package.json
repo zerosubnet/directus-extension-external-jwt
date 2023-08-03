@@ -9,6 +9,15 @@
 		"directus-custom-hook",
 		"directus-external-jwt"
 	],
+	"homepage": "https://github.com/Zerosubnet/directus-extension-external-jwt",
+	"license": "LGPL-3.0-only",
+	"author": {
+		"name": "zerosubnet"
+	},
+	"repository": {
+		"type": "git",
+		"url": "https://github.com/Zerosubnet/directus-extension-external-jwt.git"
+	},
 	"type": "module",
 	"release": {
 		"branches": [
