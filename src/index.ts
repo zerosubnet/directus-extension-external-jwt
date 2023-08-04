@@ -18,8 +18,11 @@ export default defineHook<HookConfig>(({ filter }) => {
 			return defaultAccountability
 		}
 
+		
+
 		const decodedToken = jwt.decode(req.token);
-		if(typeof decodedToken === 'string') return defaultAccountability; // if token is not a jwt, let directus handle it
+		
+		if(typeof decodedToken === 'string' || decodedToken == null) return defaultAccountability; // if token is not a jwt, let directus handle it
 		if(decodedToken?.iss == 'directus') return defaultAccountability; // if token issued by directus, let directus handle it
 
 
