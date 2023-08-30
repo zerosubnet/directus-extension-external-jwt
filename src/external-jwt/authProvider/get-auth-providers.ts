@@ -8,6 +8,7 @@ import { createError } from '@directus/errors';
 
 const InvalidJWKIssuerMetadata = createError('INVALID_JWKS_ISSUER_ERROR', 'No JWKS_URL or JWKS_KEYS and could not discover JWKS_URL from openid metadata', 500);
 const InvalidJWKSUrl = createError('INVALID_JWKS_ISSUER_ERROR', 'Could not retrieve any valid keys from JWKS_URL', 500);
+const InvalidJWKKeys = createError('INVALID_JWKS_ISSUER_ERROR', 'No signing keys in response from provider')
 
 
 export interface AuthProvider {
@@ -130,7 +131,7 @@ async function getJWKSClient(url: string) {
 	try {
 		const keys = await jwksClient.getSigningKeys()
 		if (keys.length == 0) {
-			throw new InvalidJWKSUrl();
+			throw new InvalidJWKKeys();
 		}
 	} catch (error) {
 		throw new InvalidJWKSUrl();
