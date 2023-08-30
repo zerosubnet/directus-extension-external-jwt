@@ -33,6 +33,8 @@ const allowedEnvironmentVars = [
 	'REDIS_PORT',
 	'REDIS_USERNAME',
 	'REDIS_PASSWORD',
+	'REDIS_PASSWORD_FILE',
+	'REDIS_JWT_DB',
 	// auth
 	'AUTH_PROVIDERS',
 	'AUTH_.+_DRIVER',

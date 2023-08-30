@@ -29,11 +29,15 @@ function getCache(): Keyv | null {
         uri = env['REDIS']
         
         if(uri == null || uri === '') {
-            uri = `redis://${env['REDIS_USERNAME'] || '' }:${env['REDIS_PASSWORD'] || ''}@${env['REDIS_HOST']}:${env['REDIS_PORT']}`;
+            uri = `redis://${env['REDIS_USERNAME'] || '' }:${env['REDIS_PASSWORD'] || ''}@${env['REDIS_HOST']}:${env['REDIS_PORT'] || '6379'} /${env['REDIS_JWT_DB'] || '2'}`;
         }
 
+        try {
+            store = new KeyvRedis(uri);
+        } catch(e) {
+            throw new Error("CACHE: could not connect to database: " + e)
+        }
         
-        store = new KeyvRedis(uri);
     }
 
     try {
