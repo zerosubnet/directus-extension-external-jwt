@@ -29,7 +29,7 @@ function getCache(): Keyv | null {
         uri = env['REDIS']
         
         if(uri == null || uri === '') {
-            uri = `redis://${env['REDIS_USERNAME'] }:${env['REDIS_PASSWORD'] || ''}@${env['REDIS_HOST']}:${env['REDIS_PORT']}`;
+            uri = `redis://${env['REDIS_USERNAME'] || '' }:${env['REDIS_PASSWORD'] || ''}@${env['REDIS_HOST']}:${env['REDIS_PORT']}`;
         }
 
         
