@@ -146,9 +146,9 @@
 		"keyv": "^4.5.3",
 		"openid-client": "^5.4.3"
 	},
-	"overrides": {
-		"@directus/extensions-sdk": {
-			"vite": "4.3.9"
+	"pnpm": {
+		"overrides": {
+			"vite": "^4.3.9"
 		}
 	}
 }
