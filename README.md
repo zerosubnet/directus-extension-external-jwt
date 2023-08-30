@@ -23,3 +23,4 @@ all configuration options listed here are an extension to directus default confi
 | AUTH_PROVIDER_JWT_USEDB      | Bool              | If enabled/true the plugin will resolve the user and roles from the directus database using the token. For OIDC the sub is used. Should not be used without a Redis Cache enabled.
 | CACHE_JWT_NAMESPACE          | String            | What namespace to use in cache store.
 | CACHE_JWT_TTL                | Number            | Time to live for the cached user entry, default 5000 (5 seconds)
+| REDIS_JWT_DB                 | Number            | What database to use in Redis cache, default 2
