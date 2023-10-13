@@ -18,18 +18,7 @@ env:
 jobs:
   release:
     name: Release
-    strategy:
-      fail-fast: false
-      matrix:
-        platform:
-          - linux/amd64
-          - linux/arm64
-        include:
-          - platform: linux/amd64
-            runner: amd64-builder
-          - platform: linux/arm64
-            runner: arm64-builder
-    runs-on: ${{ matrix.runner }}
+    runs-on: ubuntu-latest
     permissions:
       contents: write # to be able to publish a GitHub release
       issues: write # to be able to comment on released issues
@@ -53,7 +42,10 @@ jobs:
            node-version: 18
            cache: 'pnpm'
       
-      
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@v2
+        with:
+          platforms: 'arm64,amd64'
 
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v2
@@ -94,7 +86,6 @@ jobs:
         uses: docker/build-push-action@v4
         with:
           context: .
-          platforms: ${{ matrix.platform }}
           provenance: false
           push: true
           tags: ${{ steps.meta.outputs.tags }}
