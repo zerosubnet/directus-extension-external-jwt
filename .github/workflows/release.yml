@@ -28,7 +28,7 @@ jobs:
           - platform: linux/amd64
             runner: amd64-builder
           - platform: linux/arm64
-            runner: arm64-builde
+            runner: arm64-builder
     runs-on: ${{ matrix.runner }}
     permissions:
       contents: write # to be able to publish a GitHub release
