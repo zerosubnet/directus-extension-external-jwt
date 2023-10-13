@@ -1,9 +1,13 @@
 import {default as Keyv, Store} from 'keyv';
 import env from './config/config';
 import {default as KeyvRedis} from '@keyv/redis';
+
 // check if redis is defined
 
 const cache: Keyv | null = getCache();
+
+
+
 
 function getCache(): Keyv | null {
     if(env['CACHE_ENABLED'] !== true) return null;
@@ -25,18 +29,35 @@ function getCache(): Keyv | null {
         uri = env['REDIS']
         
         if(uri == null || uri === '') {
-            uri = `redis://${env['REDIS_USERNAME']}:${env['REDIS_PASSWORD']}@${env['REDIS_HOST']}:${env['REDIS_PORT']}`;
+            uri = `redis://${env['REDIS_USERNAME'] || '' }:${env['REDIS_PASSWORD'] || ''}@${env['REDIS_HOST']}:${env['REDIS_PORT'] || '6379'} /${env['REDIS_JWT_DB'] || '2'}`;
         }
 
-        store = new KeyvRedis(uri);
-
+        try {
+            store = new KeyvRedis(uri);
+        } catch(e) {
+            throw new Error("CACHE: could not connect to database: " + e)
+        }
+        
     }
 
-    return new Keyv(uri, {
-        namespace: namespace,
-        ttl,
-        store: store
-    });
+    try {
+        const keyv = new Keyv(uri, {
+            namespace: namespace,
+            ttl,
+            store: store
+        });
+
+        keyv.on('error', (err) => {
+            throw new Error("CACHE: could not connect: " + err)
+        });
+    
+        return  keyv
+    } catch(e) {
+        throw new Error("CACHE: could not connect to database: " + e)
+    }
+    
+
+    
 }
 
 export function CacheEnabled(): boolean {
