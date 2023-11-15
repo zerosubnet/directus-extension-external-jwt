@@ -31,6 +31,8 @@ jobs:
         name: linting
       - run: pnpm test:coverage
         name: testing
+      - name: Verify the integrity of provenance attestations and registry signatures for installed dependencies
+        run: pnpm audit signatures
       - run: pnpm build
         name: build package
       - name: 'Report Coverage'
