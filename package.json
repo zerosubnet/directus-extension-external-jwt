@@ -95,7 +95,7 @@
 	},
 	"devDependencies": {
 		"@directus/errors": "^0.3.2",
-		"@directus/extensions-sdk": "^11.0.7",
+		"@directus/extensions-sdk": "^13.0.1",
 		"@directus/tsconfig": "^1.0.1",
 		"@directus/types": "^11.1.2",
 		"@directus/utils": "^11.0.9",
@@ -128,7 +128,6 @@
 		"eslint-plugin-promise": "^6.2.0",
 		"fs-extra": "^11.2.0",
 		"js-yaml": "^4.1.0",
-		
 		"lodash-es": "^4.17.21",
 		"nyc": "^15.1.0",
 		"semantic-release": "^21.1.2",
