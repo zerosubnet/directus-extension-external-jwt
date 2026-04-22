@@ -1,39 +1,41 @@
 import { defineHook } from '@directus/extensions-sdk';
-import { getAccountabilityForToken } from './external-jwt/get-accountability-for-token';
+import { getAccountabilityForToken, introspectAndGetAccountability } from './external-jwt/get-accountability-for-token';
 import type { Request } from 'express';
 import jwt from 'jsonwebtoken';
-import type {HookConfig} from '@directus/extensions'
+import type { HookConfig } from '@directus/extensions';
 import type { Accountability, EventContext } from '@directus/types';
 
 export default defineHook<HookConfig>(({ filter }) => {
-	
-	// get all configuration
-	
-	filter('authenticate', (defaultAccountability: Accountability, event, context: EventContext)  => {
-		const req = <Request>event['req'];
-		if(!req.token) return defaultAccountability;
 
-		if(!context.database) {
-			return defaultAccountability
+	filter('authenticate', async (defaultAccountability: Accountability, event, context: EventContext) => {
+		const req = <Request>event['req'];
+		if (!req.token) return defaultAccountability;
+
+		if (!context.database) {
+			return defaultAccountability;
 		}
 
-		
-
 		const decodedToken = jwt.decode(req.token);
-		
-		if(typeof decodedToken === 'string' || decodedToken == null) return defaultAccountability; // if token is not a jwt, let directus handle it
-		if(decodedToken?.iss == 'directus') return defaultAccountability; // if token issued by directus, let directus handle it
 
+		// If token is a Directus-issued JWT, let Directus handle it
+		if (decodedToken && typeof decodedToken !== 'string' && decodedToken.iss === 'directus') {
+			return defaultAccountability;
+		}
 
-		
+		// If token is a valid JWT with an external issuer, verify via JWKS
+		if (decodedToken && typeof decodedToken !== 'string') {
+			return getAccountabilityForToken(req.token, decodedToken.iss, context.accountability, context.database);
+		}
 
-		return getAccountabilityForToken(req.token, decodedToken?.iss, context.accountability, context.database)
+		// Token is not a JWT (opaque) -- try introspection
+		try {
+			const result = await introspectAndGetAccountability(req.token, context.accountability, context.database);
+			if (result !== null) return result;
+		} catch {
+			// Introspection failed, fall back to Directus default handling
+		}
+
+		return defaultAccountability;
 	});
 
-	/*filter('auth.jwt', (status, user, provider) => {
-
-	})*/
-
 });
-
-

@@ -1,10 +1,13 @@
+import { describe, expect, it, vi } from 'vitest'
 
-import { describe, expect, it } from 'vitest'
-import {default as index} from '../src/index'
+vi.mock('@directus/extensions-sdk', () => ({
+	defineHook: (fn: (...args: unknown[]) => unknown) => fn,
+}));
+
+import { default as index } from './index'
 
 describe('index', () => {
-    it('should export a function ', () => {
-        expect(index).to.be.instanceOf(Function);
-    })
-
+	it('should export a function', () => {
+		expect(index).to.be.instanceOf(Function);
+	})
 })

@@ -9,14 +9,14 @@
 		"directus-custom-hook",
 		"directus-external-jwt"
 	],
-	"homepage": "https://github.com/Zerosubnet/directus-extension-external-jwt",
+	"homepage": "https://github.com/zerosubnet/directus-extension-external-jwt",
 	"license": "LGPL-3.0-only",
 	"author": {
 		"name": "zerosubnet"
 	},
 	"repository": {
 		"type": "git",
-		"url": "https://github.com/Zerosubnet/directus-extension-external-jwt.git"
+		"url": "https://github.com/zerosubnet/directus-extension-external-jwt.git"
 	},
 	"type": "module",
 	"release": {
@@ -32,7 +32,7 @@
 			"@semantic-release/commit-analyzer",
 			"@semantic-release/release-notes-generator",
 			"@semantic-release/changelog",
-			"@semantic-release/npm",
+			["@semantic-release/npm", { "provenance": true }],
 			[
 				"@semantic-release/github",
 				{
@@ -52,7 +52,8 @@
 		"preset": "angular"
 	},
 	"publishConfig": {
-		"access": "public"
+		"access": "public",
+		"provenance": true
 	},
 	"directus:extension": {
 		"type": "hook",
@@ -68,92 +69,68 @@
 		"dev": "directus-extension build -w --no-minify",
 		"link": "directus-extension link",
 		"directus": "pnpm dlx directus start",
-		"lint": "eslint . --ext .ts",
+		"lint": "eslint .",
 		"test": "vitest",
-		"test:coverage": "vitest run --coverage"
+		"test:coverage": "vitest run --coverage",
+		"prepare": "simple-git-hooks"
 	},
-	"nyc": {
-		"extension": [
-			".ts",
-			".tsx"
-		],
-		"reporter": [
-			"text",
-			"lcov"
-		],
-		"report-dir": "coverage",
-		"all": true,
-		"extends": "@istanbuljs/nyc-config-typescript",
-		"check-coverage": true,
-		"include": [
-			"src/**/*.[tj]s?(x)"
-		],
-		"exclude": [
-			"src/_tests_/**/*.*",
-			"src/**/*.test.[tj]s?(x)"
-		]
+	"simple-git-hooks": {
+		"pre-commit": "pnpm lint && pnpm test --run && pnpm audit"
 	},
 	"devDependencies": {
-		"@directus/errors": "^0.3.2",
-		"@directus/extensions-sdk": "^13.0.1",
-		"@directus/tsconfig": "^1.0.1",
-		"@directus/types": "^11.1.2",
-		"@directus/utils": "^11.0.9",
-		"@istanbuljs/nyc-config-typescript": "^1.0.2",
+		"@directus/errors": "^2.3.1",
+		"@directus/extensions-sdk": "^17.1.3",
+		"@directus/tsconfig": "^4.0.0",
+		"@directus/types": "^15.0.2",
+		"@directus/utils": "^13.4.0",
 		"@semantic-release/changelog": "^6.0.3",
-		"@semantic-release/commit-analyzer": "^10.0.4",
-		"@semantic-release/exec": "^6.0.3",
-		"@semantic-release/github": "^9.2.6",
-		"@semantic-release/npm": "^10.0.6",
-		"@types/chai": "^4.3.16",
-		"@types/chai-as-promised": "^7.1.8",
-		"@types/config": "^3.3.4",
-		"@types/express": "^4.17.21",
+		"@semantic-release/commit-analyzer": "^13.0.1",
+		"@semantic-release/exec": "^7.1.0",
+		"@semantic-release/github": "^12.0.6",
+		"@semantic-release/npm": "^13.1.5",
+		"@types/config": "^4.4.0",
+		"@types/express": "^5.0.6",
 		"@types/fs-extra": "^11.0.4",
 		"@types/js-yaml": "^4.0.9",
-		"@types/jsonwebtoken": "^9.0.6",
+		"@types/jsonwebtoken": "^9.0.10",
 		"@types/lodash-es": "^4.17.12",
-		"@types/mocha": "^10.0.6",
-		"@types/node": "^20.14.2",
-		"@typescript-eslint/eslint-plugin": "^5.62.0",
-		"@vitest/coverage-istanbul": "^0.34.6",
-		"axios": "^1.7.2",
-		"config": "^3.3.11",
-		"dotenv": "^16.4.5",
-		"eslint": "^8.57.0",
-		"eslint-config-standard-with-typescript": "^37.0.0",
-		"eslint-plugin-import": "^2.29.1",
-		"eslint-plugin-n": "^15.7.0",
-		"eslint-plugin-no-loops": "^0.3.0",
-		"eslint-plugin-promise": "^6.2.0",
-		"fs-extra": "^11.2.0",
-		"js-yaml": "^4.1.0",
-		"lodash-es": "^4.17.21",
-		"nyc": "^15.1.0",
-		"semantic-release": "^21.1.2",
-		"sqlite3": "^5.1.7",
-		"ts-mocha": "^10.0.0",
+		"@types/node": "^25.6.0",
+		"@vitest/coverage-istanbul": "^4.1.5",
+		"axios": "^1.15.2",
+		"config": "^4.4.1",
+		"dotenv": "^17.4.2",
+		"eslint": "^10.2.1",
+		"eslint-plugin-no-loops": "^0.4.0",
+		"fs-extra": "^11.3.4",
+		"js-yaml": "^4.1.1",
+		"lodash-es": "^4.18.1",
+		"semantic-release": "^25.0.3",
+		"simple-git-hooks": "^2.13.1",
+		"sqlite3": "^6.0.1",
 		"ts-node": "^10.9.2",
-		"typescript": "^5.4.5",
-		"vitest": "^0.34.6"
+		"typescript": "^6.0.3",
+		"typescript-eslint": "^8.59.0",
+		"vitest": "^4.1.5"
 	},
 	"dependencies": {
-		"@keyv/redis": "^2.8.5",
-		"jsonwebtoken": "^9.0.2",
-		"jwks-rsa": "^3.1.0",
-		"keyv": "^4.5.4",
-		"openid-client": "^5.6.5"
+		"@keyv/redis": "^5.1.6",
+		"jsonwebtoken": "^9.0.3",
+		"jwks-rsa": "^4.0.1",
+		"keyv": "^5.6.0"
 	},
 	"pnpm": {
+		"auditConfig": {
+			"ignoreCves": [
+				"CVE-2026-31873",
+				"CVE-2026-31860",
+				"CVE-2026-39315"
+			]
+		},
 		"overrides": {
-			"vite@<4.3.9": "^4.3.9",
-			"vite@>4.3.9": "^4.5.3",
 			"zod@<=3.22.2": ">=3.22.3",
 			"axios@<=1.4.0": ">=1.4.1",
 			"axios@>=1.3.2 <=1.7.3": ">=1.7.4",
 			"micromatch@<4.0.8": ">=4.0.8",
-			"vite@>=4.0.0 <4.5.4": ">=4.5.4",
-			"vite@>=4.0.0 <=4.5.3": ">=4.5.4",
 			"rollup@>=3.0.0 <3.29.5": ">=3.29.5",
 			"cross-spawn@>=7.0.0 <7.0.5": ">=7.0.5",
 			"nanoid@<3.3.8": ">=3.3.8",
@@ -163,7 +140,8 @@
 			"@octokit/plugin-paginate-rest@>=1.0.0 <11.4.1": ">=11.4.1",
 			"serialize-javascript@<6.0.2": ">=6.0.2",
 			"esbuild@<=0.24.2": ">=0.25.0",
-			"vite@<=4.5.5": ">=4.5.6"
+			"minimatch@<9.0.7": ">=9.0.7",
+			"lodash-es@<=4.17.23": ">=4.18.0"
 		}
 	}
 }

@@ -1,7 +1,5 @@
 import { toArray } from '@directus/utils';
-import {JwksClient} from 'jwks-rsa';
-
-import { Issuer } from 'openid-client';
+import { JwksClient } from 'jwks-rsa';
 
 import env from '../config/config';
 import { createError } from '@directus/errors';
@@ -22,91 +20,78 @@ export interface AuthProvider {
 	jwks_url?: string;
 	jwks_keys?: string;
 	issuer_url?: string;
-	
+
 	admin_key?: string;
 	app_key?: string;
 	role_key?: string;
 	JWKSClient?: JwksClient;
 	use_database?: boolean;
-}
 
+	introspection_url?: string;
+	introspection_auth_method?: 'basic' | 'jwt';
+	introspection_key?: string;
+}
 
 
 export async function getAuthProviders(): Promise<AuthProvider[]> {
-	console.log("calling auth providers")
-	return new Promise((resolve, reject) => {
-		const authProviders: AuthProvider[] = toArray(env['AUTH_PROVIDERS'])
-			.filter((provider) => provider && env[`AUTH_${provider.toUpperCase()}_DRIVER`] === ('openid' || 'oauth2'))
-			.map((provider) => ({
-				name: provider,
-				label: env[`AUTH_${provider.toUpperCase()}_LABEL`],
-				driver: env[`AUTH_${provider.toUpperCase()}_DRIVER`],
-				icon: env[`AUTH_${provider.toUpperCase()}_ICON`],
-				trusted: env[`AUTH_${provider.toUpperCase()}_TRUSTED`],
-				jwks_url: env[`AUTH_${provider.toUpperCase()}_JWKS_URL`],
-				jwks_keys: env[`AUTH_${provider.toUpperCase()}_JWKS_KEYS`],
-				issuer_url: env[`AUTH_${provider.toUpperCase()}_ISSUER_URL`],
-				admin_key: env[`AUTH_${provider.toUpperCase()}_JWT_ADMIN_KEY`],
-				app_key: env[`AUTH_${provider.toUpperCase()}_JWT_APP_KEY`],
-				role_key: env[`AUTH_${provider.toUpperCase()}_JWT_ROLE_KEY`],
-				client_id: env[`AUTH_${provider.toUpperCase()}_CLIENT_ID`],
-				client_secret: env[`AUTH_${provider.toUpperCase()}_CLIENT_SECRET`],
-				use_database: env[`AUTH_${provider.toUpperCase()}_JWT_USEDB`],
-			}));
+	const allProviders: AuthProvider[] = toArray(env['AUTH_PROVIDERS'])
+		.filter((provider) => provider && ['openid', 'oauth2'].includes(env[`AUTH_${provider.toUpperCase()}_DRIVER`]))
+		.map((provider) => ({
+			name: provider,
+			label: env[`AUTH_${provider.toUpperCase()}_LABEL`],
+			driver: env[`AUTH_${provider.toUpperCase()}_DRIVER`],
+			icon: env[`AUTH_${provider.toUpperCase()}_ICON`],
+			trusted: env[`AUTH_${provider.toUpperCase()}_TRUSTED`],
+			jwks_url: env[`AUTH_${provider.toUpperCase()}_JWKS_URL`],
+			jwks_keys: env[`AUTH_${provider.toUpperCase()}_JWKS_KEYS`],
+			issuer_url: env[`AUTH_${provider.toUpperCase()}_ISSUER_URL`],
+			admin_key: env[`AUTH_${provider.toUpperCase()}_JWT_ADMIN_KEY`],
+			app_key: env[`AUTH_${provider.toUpperCase()}_JWT_APP_KEY`],
+			role_key: env[`AUTH_${provider.toUpperCase()}_JWT_ROLE_KEY`],
+			client_id: env[`AUTH_${provider.toUpperCase()}_CLIENT_ID`],
+			client_secret: env[`AUTH_${provider.toUpperCase()}_CLIENT_SECRET`],
+			use_database: env[`AUTH_${provider.toUpperCase()}_JWT_USEDB`],
+			introspection_url: env[`AUTH_${provider.toUpperCase()}_INTROSPECTION_URL`],
+			introspection_auth_method: env[`AUTH_${provider.toUpperCase()}_INTROSPECTION_AUTH_METHOD`] || 'basic',
+			introspection_key: env[`AUTH_${provider.toUpperCase()}_INTROSPECTION_KEY`],
+		}))
+		.filter((provider) => provider.trusted);
 
-		
-		if(authProviders.length === 0) return resolve([]);
+	if (allProviders.length === 0) return [];
 
-		
+	const jwksPromises = allProviders
+		.filter((p) => p.issuer_url || p.jwks_url || p.jwks_keys)
+		.map((p) => getJWKS(p));
 
-		const promises = [];
+	await Promise.all(jwksPromises);
 
-		for (const authProvider of authProviders) {
-			switch (authProvider.driver) {	
-				case 'openid':
-					
-					if (!authProvider.trusted || (authProvider.issuer_url == null && authProvider.jwks_url == null && authProvider.jwks_keys == null)) break;
-					//promises.push(getJWKS(authProvider.issuer_url, authProvider.jwks_url, authProvider.jwks_keys));
-					promises.push(getJWKS(authProvider));
-					break;
-				case 'oauth2':
-					if (!authProvider.trusted || (authProvider.issuer_url == null && authProvider.jwks_url == null && authProvider.jwks_keys == null)) break;
-					//promises.push(getJWKS(authProvider.issuer_url, authProvider.jwks_url, authProvider.jwks_keys));
-					promises.push(getJWKS(authProvider));
-					break;
-			}
-		}
-
-		Promise.all(promises).then((values) => {
-			resolve(values);
-		}).catch((error) => {
-			reject(error);
-		})
-
-	});
+	return allProviders;
 }
 
 async function getJWKS(provider: AuthProvider) {
-	if(provider.jwks_keys !== undefined && provider.issuer_url == null && provider.jwks_url == null) {
-		const jwks_keys = JSON.parse(provider.jwks_keys);	
+	if (provider.jwks_keys !== undefined && provider.issuer_url == null && provider.jwks_url == null) {
+		const jwks_keys = JSON.parse(provider.jwks_keys);
 		const jwksClient = new JwksClient({
 			getKeysInterceptor: () => {
 				return jwks_keys;
 			},
 			jwksUri: ''
-		})
-	
+		});
 
 		provider.JWKSClient = jwksClient;
-		
+		return provider;
 	}
 
-	if(provider.issuer_url && !provider.jwks_url) {
-		//try to discover with openid
-		const issuer = await Issuer.discover(provider.issuer_url);
-		if(issuer.metadata.jwks_uri != null) {
-			provider.jwks_url = issuer.metadata.jwks_uri;
-		}	
+	if (provider.issuer_url && !provider.jwks_url) {
+		const discoveryUrl = `${provider.issuer_url.replace(/\/$/, '')}/.well-known/openid-configuration`;
+		const response = await fetch(discoveryUrl);
+		if (!response.ok) {
+			throw new InvalidJWKIssuerMetadata();
+		}
+		const metadata = await response.json() as { jwks_uri?: string };
+		if (metadata.jwks_uri) {
+			provider.jwks_url = metadata.jwks_uri;
+		}
 	}
 
 	if (provider.jwks_url == null) throw new InvalidJWKIssuerMetadata();
@@ -114,7 +99,7 @@ async function getJWKS(provider: AuthProvider) {
 	const jwksClient = await getJWKSClient(provider.jwks_url);
 
 	provider.JWKSClient = jwksClient;
-	
+
 	return provider;
 }
 
@@ -127,13 +112,12 @@ async function getJWKSClient(url: string) {
 		timeout: 30000, // 30 seconds
 	});
 
-	// try to get the keys
 	try {
 		const keys = await jwksClient.getSigningKeys()
 		if (keys.length == 0) {
 			throw new InvalidJWKKeys();
 		}
-	} catch (error) {
+	} catch {
 		throw new InvalidJWKSUrl();
 	}
 

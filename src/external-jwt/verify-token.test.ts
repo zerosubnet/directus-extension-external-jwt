@@ -52,7 +52,7 @@ describe('verify_token', () => {
             expect(err).to.equal('JWKSClient not initialized');
         })
     })
-    it('should reject if token is invalid', () => {
+    it('should reject if token is invalid', async () => {
         
         const invalidToken = jwt.sign({foo: 'bar'}, 'invalidkeyforjws', {algorithm: 'HS256'});
         const provider: AuthProvider = {
@@ -64,11 +64,7 @@ describe('verify_token', () => {
             name: 'test',
             client_id: 'test',
         }
-        return verify_token(provider, invalidToken).then((result) => {
-            expect(result).to.be.undefined;
-        }).catch(err => {
-            expect(err).to.be.instanceOf(jwt.JsonWebTokenError);
-        })
+        await expect(verify_token(provider, invalidToken)).rejects.toBeInstanceOf(jwt.JsonWebTokenError);
     })
     it('should accept if token is valid', async () => {
         
