@@ -5,7 +5,7 @@ dist
 
 # directus files
 *.db
-extensions/
+#extensions/*/**
 uploads/
 .env
 
@@ -17,3 +17,6 @@ uploads/
 
 # Coverage
 coverage/
+
+# test secrets
+redispass

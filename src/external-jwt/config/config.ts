@@ -62,6 +62,9 @@ const allowedEnvironmentVars = [
 	'AUTH_.+_JWT_ADMIN_KEY',
 	'AUTH_.+_JWT_APP_KEY',
 	'AUTH_.+_JWT_USEDB',
+	'AUTH_.+_INTROSPECTION_URL',
+	'AUTH_.+_INTROSPECTION_AUTH_METHOD',
+	'AUTH_.+_INTROSPECTION_KEY',
 ].map((name) => new RegExp(`^${name}$`));
 
 const acceptedEnvTypes = ['string', 'number', 'regex', 'array', 'json'];

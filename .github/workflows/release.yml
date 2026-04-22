@@ -23,25 +23,26 @@ jobs:
       contents: write # to be able to publish a GitHub release
       issues: write # to be able to comment on released issues
       pull-requests: write # to be able to comment on released pull requests
-      id-token: write # to enable use of OIDC for npm provenance
+      id-token: write # to enable use of OIDC for npm trusted publishers
       packages: write
 
     steps:
       - name: Checkout
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
         with:
           fetch-depth: 0
-      
-      - uses: pnpm/action-setup@v2
+
+      - uses: pnpm/action-setup@v4
         with:
-          version: 8
-      
+          version: 10
+
       - name: Setup Node.js
-        uses: actions/setup-node@v3
+        uses: actions/setup-node@v4
         with:
-           node-version: 18
-           cache: 'pnpm'
-      
+          node-version: 22
+          cache: 'pnpm'
+          registry-url: 'https://registry.npmjs.org'
+
       - name: Set up QEMU
         uses: docker/setup-qemu-action@v2
         with:
@@ -56,22 +57,22 @@ jobs:
           registry: ${{ env.REGISTRY }}
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
-      
+
       - name: Install dependencies
         run: pnpm install
-      
+
       - run: pnpm lint
         name: linting
-      
+
       - run: pnpm test
         name: testing
-      
+
       - name: Verify the integrity of provenance attestations and registry signatures for installed dependencies
         run: pnpm audit signatures
 
       - name: Build package
         run: pnpm build
-      
+
       - name: Extract metadata (tags, labels) for Docker
         id: meta
         uses: docker/metadata-action@v3
@@ -81,7 +82,7 @@ jobs:
             type=raw,value={{sha}}
             type=raw,value={{branch}}-latest
             type=raw,value=latest,enable={{is_default_branch}}
-        
+
       - name: Build and push Docker image
         uses: docker/build-push-action@v5
         with:
@@ -90,11 +91,10 @@ jobs:
           push: true
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
-      
+
       - name: Release
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
           SRCIMAGE: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ steps.meta.outputs.tags[0] }}
           DSTIMAGE: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
-        run: npx semantic-release
+        run: npx semantic-release@latest
